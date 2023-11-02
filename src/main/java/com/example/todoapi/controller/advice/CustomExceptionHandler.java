@@ -28,7 +28,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             MethodArgumentNotValidException ex, HttpHeaders headers,
             HttpStatus status, WebRequest request) {
 
+        var error = BadRequestErrorCreator.from(ex);
 
-        return ResponseEntity.badRequest().body(new BadRequestError());
+        return ResponseEntity.badRequest().body(error);
     }
 }
