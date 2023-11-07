@@ -1,15 +1,19 @@
 package com.example.todoapi.controller.task;
 
 import com.example.todoapi.controller.TasksApi;
+import com.example.todoapi.model.PageDTO;
 import com.example.todoapi.model.TaskDTO;
 import com.example.todoapi.model.TaskForm;
+import com.example.todoapi.model.TaskListDTO;
+import com.example.todoapi.service.task.TaskEntity;
 import com.example.todoapi.service.task.TaskService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,20 +25,41 @@ public class TaskController implements TasksApi {
     public ResponseEntity<TaskDTO> showTask(Long taskId) {
 
         var entity = taskService.find(taskId);
+        var dto = toTaskDTO(entity);
 
-        var dto = new TaskDTO();
-        dto.setId(entity.getId());
-        dto.setTitle(entity.getTitle());
         return ResponseEntity.ok(dto);
     }
 
     @Override
     public ResponseEntity<TaskDTO> createTask(TaskForm taskForm) {
         var entity = taskService.create(taskForm.getTitle());
-        var dto = new TaskDTO();
-        dto.setId(entity.getId());
-        dto.setTitle(entity.getTitle());
+        var dto = toTaskDTO(entity);
         return ResponseEntity.created(URI.create("/tasks/" + dto.getId())).body(dto);
     }
 
+    @Override
+    public ResponseEntity<TaskListDTO> listTasks(Integer limit, Long offset) {
+        var entityList = taskService.find(limit, offset);
+        var dtoList = entityList.stream()
+                .map(TaskController::toTaskDTO)
+                .collect(Collectors.toList());
+
+        var pageDTO = new PageDTO();
+        pageDTO.setLimit(limit);
+        pageDTO.setOffset(offset);
+        pageDTO.setSize(dtoList.size());
+
+        var dto = new TaskListDTO();
+        dto.setResults(dtoList);
+        dto.setPage(pageDTO);
+
+        return ResponseEntity.ok(dto);
+    }
+
+    private static TaskDTO toTaskDTO(TaskEntity task) {
+        var taskDTO = new TaskDTO();
+        taskDTO.setId(task.getId());
+        taskDTO.setTitle(task.getTitle());
+        return taskDTO;
+    }
 }
